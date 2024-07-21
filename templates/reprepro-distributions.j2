@@ -8,6 +8,6 @@ Suite: {{ repo['suite'] }}
 Architectures: {{ repo['architectures'] | join(' ') }}
 Components: {{ repo['components'] | join(' ') }}
 Description: {{ repo['description'] }}
-SignWith: {{ (repo['gpg_key'] == 'auto' | default(true)) | ternary(apt_repo_gpg_keyid, repo['gpg_key']) }}
+SignWith: {{ (repo['gpg_key'] | default('auto') == 'auto') | ternary(apt_repo_gpg_keyid, repo['gpg_key']) }}
 
 {% endfor %}

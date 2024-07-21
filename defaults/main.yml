@@ -34,4 +34,4 @@ apt_repo_list:
     components:
       - 'main'
     description: 'My example repo for Debian 12 Bookworm'
-    gpg_key: 'auto'  # 'auto' or GPG key ID
+    gpg_key: 'auto'  # optional, defaults to 'auto' or GPG key ID
