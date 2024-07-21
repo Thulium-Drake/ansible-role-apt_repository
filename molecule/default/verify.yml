@@ -1,0 +1,34 @@
+---
+- name: 'Add package to repo'
+  hosts: 'apt-repo'
+  gather_facts: false
+  tasks:
+    - name: 'Copy package to repo host'
+      ansible.builtin.copy:
+        src: 'ansible-apt-test_1.0.0-+deb12_all.deb'
+        dest: '/tmp/pkg.deb'
+        owner: 'root'
+        group: 'root'
+        mode: '0644'
+
+    - name: 'Add package to repo'
+      ansible.builtin.command: /usr/local/bin/aptrepo-add /tmp/pkg.deb bookworm
+      changed_when: true
+
+- name: 'Validate repository functionality'
+  hosts: 'apt-client'
+  gather_facts: false
+  tasks:
+    - name: 'Download GPG key'
+      ansible.builtin.get_url:
+        url: 'https://repo.example.com/public.asc'
+        dest: '/etc/apt/keyrings/custom.asc'
+        owner: 'root'
+        group: 'root'
+        mode: '0644'
+
+    - name: 'Install a test package'
+      ansible.builtin.package:
+        name: 'ansible-apt-test'
+        update_cache: true
+        state: 'present'

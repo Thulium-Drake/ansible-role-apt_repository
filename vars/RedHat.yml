@@ -1,0 +1,14 @@
+---
+apt_repo_packages:
+  - 'httpd'
+  - 'mod_ssl'
+  - 'reprepro'
+
+apt_repo_apache_conf_dir: '/etc/httpd/conf.d'
+apt_repo_apache_logdir: '/var/log/httpd'
+apt_repo_service_name: 'httpd'
+
+default_apt_repo_file_owner: 'root'
+default_apt_repo_file_group: 'root'
+
+apt_createrepo_bin: '/usr/bin/reprepro'

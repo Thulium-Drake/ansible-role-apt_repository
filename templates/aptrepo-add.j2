@@ -1,0 +1,42 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Script to add packages to the Apt repository
+
+usage="Usage: $0 [deb_package] [repo_name]
+
+    [deb_package] file can be located anywhere on the system
+    [repo_name] must be a repository that already exists in reprepo's config
+
+    -h This text
+
+NOTE: This script requires root permissions to operate!
+"
+
+while getopts "h" opt; do
+  case ${opt} in
+    h)
+      echo -e "$usage"
+      exit 0
+      ;;
+  esac
+done
+
+shift $[$OPTIND -1]
+PACKAGE=$1
+REPO_NAME=$2
+shift 1
+
+if [ -z "$PACKAGE" ] || [ -z "$REPO_NAME" ] || [ "$EUID" -ne 0 ]
+then
+  echo -e "$usage"
+  exit 1
+fi
+
+PKG_FILE=$(readlink -f $PACKAGE)
+
+cd {{ apt_repo_dir }}
+reprepro includedeb $REPO_NAME $PKG_FILE
+
+{% if ansible_facts['selinux']['status'] == 'enabled' %}
+restorecon -rv {{ apt_repo_dir }}
+{% endif %}

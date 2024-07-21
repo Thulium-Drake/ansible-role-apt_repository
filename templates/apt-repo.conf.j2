@@ -1,0 +1,24 @@
+# {{ ansible_managed }}
+{% if ansible_facts['os_family'] == 'RedHat' %}
+Listen 443 https
+{% endif %}
+<VirtualHost *:80>
+   ServerName {{ apt_repo_hostname }}
+   Redirect permanent / https://{{ apt_repo_hostname }}/
+</VirtualHost>
+
+<VirtualHost *:443>
+  ServerName {{ apt_repo_hostname }}
+
+  SSLEngine on
+  SSLCertificateFile {{ apt_repo_ssl_cert }}
+  SSLCertificateKeyFile {{ apt_repo_ssl_key }}
+
+  DocumentRoot {{ apt_repo_dir }}
+  Options +Indexes
+
+  {% if apt_repo_hsts %}Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains" {% endif %}
+
+  ErrorLog {{ apt_repo_apache_logdir }}/{{ apt_repo_hostname }}_error.log
+  CustomLog {{ apt_repo_apache_logdir }}/{{ apt_repo_hostname }}_access.log common
+</VirtualHost>

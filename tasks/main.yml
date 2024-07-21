@@ -1,0 +1,109 @@
+---
+- name: 'Include OS specific vars'
+  ansible.builtin.include_vars: "{{ lookup('first_found', role_vars_files) }}"
+  vars:
+    role_vars_files:
+      files:
+        - "{{ ansible_facts['os_family'] }}-{{ ansible_facts['distribution_major_version'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+      paths:
+        - 'vars'
+
+- name: 'Ensure packages'
+  ansible.builtin.package:
+    name: "{{ apt_repo_packages }}"
+    state: 'present'
+
+- name: 'Include OS specific tasks'
+  ansible.builtin.include_tasks: "{{ lookup('first_found', role_vars_files) }}"
+  vars:
+    role_vars_files:
+      files:
+        - "{{ ansible_facts['os_family'] }}-{{ ansible_facts['distribution_major_version'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+      paths:
+        - 'tasks'
+
+- name: 'Ensure Apt content directory'
+  ansible.builtin.file:
+    path: "{{ apt_repo_dir }}/conf"
+    owner: "{{ apt_repo_file_owner | default(default_apt_repo_file_owner, true) }}"
+    group: "{{ apt_repo_file_group | default(default_apt_repo_file_group, true) }}"
+    setype: "{{ (ansible_facts['selinux']['status'] == 'enabled') | ternary('httpd_sys_content_t', omit) }}"
+    mode: '0755'
+    state: 'directory'
+
+- name: 'Setup GPG key for repo metadata signing'
+  when: apt_repo_autogpg
+  block:
+    - name: 'Generate GPG key for repo signing'
+      ansible.builtin.command: >
+        gpg --quick-gen-key --batch --passphrase ''
+        repomanager@{{ ansible_facts['fqdn'] }}
+      register: 'apt_repo_gpg_generated'
+      changed_when: apt_repo_gpg_generated['rc'] == 0
+      failed_when: apt_repo_gpg_generated['rc'] not in [0,2]
+
+    - name: 'Export GPG public key'
+      ansible.builtin.command: >
+        gpg --batch --armor --output {{ apt_repo_dir }}/public.asc --export
+        repomanager@{{ ansible_facts['fqdn'] }}
+      changed_when: apt_repo_gpg_generated['rc'] == 0
+      failed_when: apt_repo_gpg_generated['rc'] not in [0,2]
+
+- name: 'Collect GPG public key'
+  ansible.builtin.slurp:
+    path: "{{ apt_repo_dir }}/public.asc"
+  register: 'apt_repo_gpg_key'
+
+- name: 'Collect fingerprint from GPG public key'
+  ansible.builtin.set_fact:
+    apt_repo_gpg_keyid: "{{ apt_repo_gpg_key['content'] | b64decode | community.crypto.gpg_fingerprint }}"
+
+- name: 'Ensure reprepro config'
+  ansible.builtin.template:
+    src: 'reprepro-distributions.j2'
+    dest: "{{ apt_repo_dir }}/conf/distributions"
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+
+- name: 'Remove default Apache config'
+  ansible.builtin.copy:
+    content: '# MANAGED BY ANSIBLE, YOUR CHANGES WILL BE LOST!'
+    dest: "{{ apt_repo_apache_conf_dir }}/{{ conf }}"
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  loop:
+    - '000-default.conf'
+    - 'autoindex.conf'
+    - 'ssl.conf'
+    - 'userdir.conf'
+    - 'welcome.conf'
+  loop_control:
+    loop_var: 'conf'
+  notify: 'Restart apache'
+
+- name: 'Ensure Apache config'
+  ansible.builtin.template:
+    src: 'apt-repo.conf.j2'
+    dest: "{{ apt_repo_apache_conf_dir }}/apt-repo.conf"
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify: 'Restart apache'
+
+- name: 'Ensure service'
+  ansible.builtin.service:
+    name: "{{ apt_repo_service_name }}"
+    state: 'started'
+    enabled: true
+
+- name: 'Ensure repo-add script'
+  ansible.builtin.template:
+    src: 'aptrepo-add.j2'
+    dest: '/usr/local/bin/aptrepo-add'
+    owner: 'root'
+    group: 'root'
+    mode: '0755'

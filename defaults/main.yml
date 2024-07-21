@@ -1,0 +1,37 @@
+---
+# where to store the RPM packages
+apt_repo_dir: '/var/www/apt'
+
+# Owner of the files, if not defined will use OS-specific defaults (e.g. www-data on Debian)
+apt_repo_file_owner: ''
+apt_repo_file_group: ''
+
+# Service name for the repository
+apt_repo_hostname: 'repo.example.com'
+
+# SSL certificate information
+apt_repo_ssl_cert: '/etc/ssl/certs/server.crt'
+apt_repo_ssl_key: '/etc/ssl/certs/server.key'
+
+# HSTS on the webserver
+apt_repo_hsts: false
+
+# Apt repo metadata is signed with GPG (this does not have to be the same key as the packages)
+#
+# This role can generate a GPG key for use with the repo by itself, it will be stored in <webroot>/public.asc
+#
+# If you wish to use your own key, place the public key in <webroot>/public.asc and set below to false
+apt_repo_autogpg: true
+
+# Repositories to configure
+apt_repo_list:
+  - origin: 'Example'
+    label: 'Internal'
+    codename: 'bookworm'
+    suite: 'bookwork'
+    architectures:
+      - 'amd64'
+    components:
+      - 'main'
+    description: 'My example repo for Debian 12 Bookworm'
+    gpg_key: 'auto'  # 'auto' or GPG key ID

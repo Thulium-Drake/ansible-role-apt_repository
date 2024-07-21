@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+
+{% for repo in apt_repo_list %}
+Origin: {{ repo['origin'] }}
+Label: {{ repo['label'] }}
+Codename: {{ repo['codename'] }}
+Suite: {{ repo['suite'] }}
+Architectures: {{ repo['architectures'] | join(' ') }}
+Components: {{ repo['components'] | join(' ') }}
+Description: {{ repo['description'] }}
+SignWith: {{ (repo['gpg_key'] == 'auto' | default(true)) | ternary(apt_repo_gpg_keyid, repo['gpg_key']) }}
+
+{% endfor %}

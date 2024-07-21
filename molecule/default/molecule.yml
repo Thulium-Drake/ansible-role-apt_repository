@@ -1,0 +1,48 @@
+---
+dependency:
+  name: 'galaxy'
+  options:
+    requirements-file: 'molecule/default/requirements.yml'
+    force: true
+driver:
+  name: ${DRIVER_NAME:-docker}
+platforms:
+  - name: "apt-repo"
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-debian12}-ansible:latest"
+    command: '/lib/systemd/systemd'
+    pre_build_image: true
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+    privileged: true
+    network: 'aptnet'
+    ip: '10.30.50.12'
+    subnet: '10.30.50.0/24'
+    docker_networks:
+      - name: 'aptnet'
+        ipam_config:
+          - subnet: "10.30.50.0/24"
+    networks:
+      - name: "aptnet"
+        ipv4_address: '10.30.50.12'
+
+  - name: "apt-client"
+    image: "geerlingguy/docker-debian12-ansible:latest"
+    command: '/lib/systemd/systemd'
+    pre_build_image: true
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+    privileged: true
+    network: 'aptnet'
+    ip: '10.30.50.11'
+    subnet: '10.30.50.0/24'
+    docker_networks:
+      - name: 'aptnet'
+        ipam_config:
+          - subnet: "10.30.50.0/24"
+    networks:
+      - name: "aptnet"
+        ipv4_address: '10.30.50.11'
+provisioner:
+  name: 'ansible'
+verifier:
+  name: 'ansible'

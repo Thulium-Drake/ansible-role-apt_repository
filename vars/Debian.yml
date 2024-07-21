@@ -1,0 +1,14 @@
+---
+apt_repo_packages:
+  - 'gnupg2'
+  - 'apache2'
+  - 'reprepro'
+
+apt_repo_apache_conf_dir: '/etc/apache2/sites-enabled'
+apt_repo_apache_logdir: '/var/log/apache2'
+apt_repo_service_name: 'apache2'
+
+apt_repo_file_owner: 'www-data'
+apt_repo_file_group: 'www-data'
+
+apt_createrepo_bin: '/usr/bin/reprepro'
